@@ -28,9 +28,22 @@ jobs:
           key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*','**/gradle-wrapper.properties') }}
           restore-keys: |
             ${{ runner.os }}-gradle-
-
-      - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+            
+      - name: Cache Gradle
+        run: |
+          set -e
+          if [ -x "./gradlew" ]; then
+            chmod +x ./gradlew || true
+            ./gradlew assembleDebug --no-daemon
+          else
+            echo "No gradlew found — installing Gradle 8.1.1 temporarily..."
+            sudo apt-get update
+            sudo apt-get install -y wget unzip
+            wget -q https://services.gradle.org/distributions/gradle-8.1.1-bin.zip -O /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /tmp
+            export PATH="/tmp/gradle-8.1.1/bin:$PATH"
+            gradle assembleDebug --no-daemon
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
